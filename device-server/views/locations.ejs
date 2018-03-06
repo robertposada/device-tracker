@@ -1,0 +1,38 @@
+<!DOCTYPE html>
+<html>
+  <head>
+    <title>Locations Listing</title>
+    <link rel='stylesheet' href='/stylesheets/style.css' />
+  </head>
+  <body>
+    <h2>Location Listing for raspi with id: <strong><%= uuid %></strong></h2>
+    <% maplink = "/map/?nlocations=" + (nlocations) %> 
+    <span><a href=<%= maplink %> >View Map</a> </span>
+    <hr/>
+    <ul>
+        <% 
+            var nextNum = 0;
+            var maplink = ""; 
+        %>
+        <% for(let i = 0; i < locations.length; i++) { %>
+            <li>
+                <h4>Time of Location: <%= new Date(locations[i].date_time) %></h3>
+                <span>Longitude: <%= locations[i].longitude %>, </span> 
+                <span>Latitude: <%= locations[i].latitude %>, </span> 
+                <span>Altitude: <%= locations[i].altitude %></span>        
+                <hr/>
+            </li>
+            
+        <%  } 
+            if (locations.length == nlocations) {
+                nextNum = start + nlocations;
+            } else {
+                nextNum = start
+            }
+            
+        %>
+    </ul>
+    <% var link = "/listing/" + "?start=" + (nextNum) + "&nlocations=" + (nlocations) %>
+    <a href=<%= link %> id="next">Next</a>
+  </body>
+</html>

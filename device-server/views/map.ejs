@@ -1,0 +1,180 @@
+<!DOCTYPE html>
+<html>
+<head>
+<style>
+	.button {
+		background-color: #4CAF50;
+		border: none;
+		color: white;
+		padding: 15px 32px;
+		text-align: center;
+		text-decoration: none;
+		display: block;
+		font-size: 16px;
+		margin: auto;
+		cursor: pointer;
+	}
+
+    .options {
+		background-color: #4CAF50;
+		border: none;
+		color: white;
+		padding: 15px 20px;
+		text-align: center;
+		text-decoration: none;
+		display: block;
+		font-size: 16px;
+		margin: auto;
+	}
+	
+	h1 {
+		color: #4CAF50;
+		text-align: center;
+		font-weight: bold;
+		font-size: 40px;
+	}
+	
+	body {
+		background-color: Gainsboro; 
+	}
+	
+</style>
+</head>
+
+<body>
+
+<h1>RasPi Location Tracker<br/></h1>
+<div class="options">
+    <label>Number of Locations 
+        <input id="nlocations" type="text" value="<%= nlocations %>" />
+    </label>
+    <label>Track From: 
+        <input type="datetime-local" id="trackFrom"/>
+    </label>
+</div>
+<div id="map"  style="width:100%;height:700px;"></div>
+
+
+<script>
+	
+	function myMap(data = []) {
+	
+        var skipMarker = false;
+        
+        if (data.length == 0) {
+            skipMarker = true;
+            data[0] = [34.074,-118.444];
+        }
+            
+        center_lat = data[0][0];
+        center_lng = data[0][1];
+        var mapOptions = {
+            center: new google.maps.LatLng(center_lat, center_lng),
+            zoom: 15,
+            mapTypeId: google.maps.MapTypeId.ROADMAP
+        }
+        
+        var map = new google.maps.Map(document.getElementById("map"), mapOptions);
+        
+        if (skipMarker == false) {
+            for (i=0; i < data.length; i++){
+                lat = data[i][0];
+                lng = data[i][1];
+                
+                var latLng = new google.maps.LatLng(lat,lng);
+                var marker = new google.maps.Marker({ position: latLng, label: (i+1).toString(), map: map});
+                }
+        }
+	}
+
+	function getCookie(name) {
+		var value = "; " + document.cookie;
+		var parts = value.split("; " + name + "=");
+		if (parts.length == 2) return parts.pop().split(";").shift();
+   	}
+	
+	/*
+	function sendPostRequest() {
+	
+        var data = [
+            [34.070,-118.440],
+            [34.072,-118.442],
+            [34.074,-118.444],
+            [34.076,-118.446],
+            [34.078,-118.448]
+        ]
+
+        return data;
+	}
+	*/
+
+	function getData(locations) {
+		let data = [];
+		for (let i = 0; i < locations.length; i++) {
+			data.push([locations[i].latitude, locations[i].longitude]);
+		}
+		return data;
+	}
+
+	// retrieves decoded cookie
+	function parseJwt (token) {
+        var base64Url = token.split('.')[1];
+        var base64 = base64Url.replace('-', '+').replace('_', '/');
+        return JSON.parse(window.atob(base64));
+    };
+	
+	function plotDataFromServer() {
+
+		// MUST CHANGE THIS
+		var domainPort = "http://localhost:3000";
+
+		// fetch input variables from user
+		var nlocations = document.getElementById('nlocations').value;
+		var t = document.getElementById('trackFrom').value;
+		var timestamp = new Date(t).getTime();
+
+		// attach cookies, get uuid from cookie
+		var token = getCookie('jwt');
+		var decoded = parseJwt(token);
+		console.log(decoded);
+		let uuid = decoded.uuid;
+		if (!timestamp || !nlocations) {
+			alert("Please input the number of locations and the time");
+			return;
+		}
+
+		if (uuid) { 
+			let url = domainPort + "/api/" + uuid + "/" + nlocations +  "/" + timestamp;
+			let xhr = new XMLHttpRequest();
+			xhr.open('GET', url, true);
+			xhr.withCredentials = true;
+			xhr.onload = () => {
+				console.log(xhr.responseText);
+				let locationArray = JSON.parse(xhr.responseText).locations;
+				if (xhr.readyState == 4 && xhr.status == 200) {
+					// fill data and call google api
+					myMap(getData(locationArray));
+				} else {
+					alert("Error: Trouble loading your devices locations");
+					window.location.href = "/";
+				}
+			}
+			xhr.send(null);
+		} else {
+				alert("Session Timeout - Please Log in again");
+				window.location.href = domainPort + "/login?";
+		}		
+	}
+</script>
+
+
+<br/>
+<input id="clickMe" type="button" class ="button" value="Track Your Device"  onclick="plotDataFromServer();" />
+
+<script src="https://maps.googleapis.com/maps/api/js?key=AIzaSyAiFbzau3QygGENS_Ijcg3ybwDPJ9gwMdo&callback=myMap"></script>
+<!--
+To use this code on your website, get a free API key from Google.
+Read more at: https://www.w3schools.com/graphics/google_maps_basic.asp
+-->
+</body>
+</html>
